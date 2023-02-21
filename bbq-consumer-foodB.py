@@ -9,7 +9,6 @@
 
 import pika
 import sys
-import time
 from collections import deque
 
 # declare variables
@@ -18,30 +17,28 @@ foodB_deque = deque(maxlen=20)  # limited to 20 items (the 20 most recent readin
 
 # define a callback function to be called when a message is received
 def foodB_callback(ch, method, properties, body):
-    """ Define behavior on getting a message about the temperature of food A"""
+    """ Define behavior on getting a message about the temperature of food B"""
     #define a list to place food B temps initializing with 0
     foodBtemp = ['0']
     # split timestamp and temp
     message = body.decode().split(",")
     # assign the temp to a variable and convert to float
-    foodBtemp[0] = round(float(message[-1]))
+    foodBtemp[0] = float(message[-1])
     # add the temp to the deque
     foodB_deque.append(foodBtemp[0])
     # check to see that the deque has 20 items before analyzing
     if len(foodB_deque) == 20:
-        # read rightmost item in deque and subtract from leftmost item in deque
-        # assign difference to a variable as a float
-        foodB_temp_check = round(float(foodB_deque[-1]-foodB_deque[0]))
-        # if the temp has changed by 1 degree then an alert is sent
-        if foodB_temp_check < 1:
-            print("Current temp of food B is:", foodBtemp[0],";", "Food B temp change in last 10 minutes is:", foodB_temp_check)
-            print("Food B stall!")
-        # Show work in progress, letting the user know the changes
+        # assign difference in most recent temp and oldest temp in deque to a variable as a float
+        foodB_temp_check = round(float(foodB_deque[-1]-foodB_deque[0]), 1)
+        # if the temp has changed by 1 degree or less in 10 minutes, then an alert is sent
+        if foodB_temp_check <= 1:
+            print("FOOD STALL: Current food B temp is:", foodBtemp[0],";", "Food B temp change in last 10 minutes is:", foodB_temp_check, "degrees")
+        # let user know current temp
         else:
-            print("Current temp of food B is:", foodBtemp[0],";", "Food B temp change in last 10 minutes is:", foodB_temp_check)
+            print("Current food B temp is:", foodBtemp[0])
     else:
-        #if the deque has less than 5 items the current temp is printed
-        print("Current temp of food B is:", foodBtemp[0])
+        #if the deque has less than 20 items the current temp is printed
+        print("Current food B temp is:", foodBtemp[0])
     # acknowledge the message was received and processed 
     # (now it can be deleted from the queue)
     ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -97,7 +94,7 @@ def main(hn: str = "localhost", qn: str = "task_queue"):
         # configure the channel to listen on a specific queue,  
         # use the callback function named foodB_callback,
         # and do not auto-acknowledge the message (let the callback handle it)
-        channel.basic_consume(foodB_temp_queue, auto_ack = False, on_message_callback=foodA_callback)
+        channel.basic_consume(foodB_temp_queue, auto_ack = False, on_message_callback=foodB_callback)
 
         # print a message to the console for the user
         print(" [*] Ready for work. To exit press CTRL+C")

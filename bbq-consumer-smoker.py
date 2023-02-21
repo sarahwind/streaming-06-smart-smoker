@@ -9,7 +9,6 @@
 
 import pika
 import sys
-import time
 from collections import deque
 
 # declare variables
@@ -24,21 +23,19 @@ def smoker_callback(ch, method, properties, body):
     # split timestamp and temp
     message = body.decode().split(",")
     # assign the temp to a variable and convert to float
-    smokertemp[0] = round(float(message[-1]))
+    smokertemp[0] = float(message[-1])
     # add the temp to the deque
     smoker_deque.append(smokertemp[0])
     # check to see that the deque has 5 items before analyzing
     if len(smoker_deque) == 5:
-        # read rightmost item in deque and subtract from leftmost item in deque
-        # assign difference to a variable as a float
-        smoker_temp_check = round(float(smoker_deque[-1]-smoker_deque[0]))
-        # if the temp has changed by 15 degress then an alert is sent
-        if smoker_temp_check < -15:
-            print("Current smoker temp is:", smokertemp[0],";", "Smoker temp change in last 2.5 minutes is:", smoker_temp_check)
-            print("Smoker Alert!")
+        # assign difference in most recent temp and oldest temp in deque to a variable as a float
+        smoker_temp_check = round(float(smoker_deque[-1]-smoker_deque[0]), 1)
+        # if the temp decreases by 15 degrees or more in 2.5 minutes, then an alert is sent
+        if smoker_temp_check <= -15:
+            print("SMOKER ALERT: Current smoker temp is:", smokertemp[0],";", "Smoker temp change in last 2.5 minutes is:", smoker_temp_check, "degrees")
         # Show work in progress, letting the user know the changes
         else:
-            print("Current smoker temp is:", smokertemp[0],";", "Smoker temp change in last 2.5 minutes is:", smoker_temp_check)
+            print("Current smoker temp is:", smokertemp[0])
     else:
         #if the deque has less than 5 items the current temp is printed
         print("Current smoker temp is:", smokertemp[0])
