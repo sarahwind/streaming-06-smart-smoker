@@ -10,20 +10,42 @@
 import pika
 import sys
 import time
+from collections import deque
 
 # declare variables
 smoker_temp_queue = "01-smoker"
+smoker_deque = deque(maxlen=5)  # limited to 5 items (the 5 most recent readings)
 
 # define a callback function to be called when a message is received
 def smoker_callback(ch, method, properties, body):
     """ Define behavior on getting a message about the smoker temperature."""
-    # decode the binary message body to a string
-    print(f" [x] Received {body.decode()}")
-    # when done with task, tell the user
-    print(" [x] Done.")
+    #define a list to place smoker temps initializing with 0
+    smokertemp = ['0']
+    # split timestamp and temp
+    message = body.decode().split(",")
+    # assign the temp to a variable and convert to float
+    smokertemp[0] = round(float(message[-1]))
+    # add the temp to the deque
+    smoker_deque.append(smokertemp[0])
+    # check to see that the deque has 5 items before analyzing
+    if len(smoker_deque) == 5:
+        # read rightmost item in deque and subtract from leftmost item in deque
+        # assign difference to a variable as a float
+        smoker_temp_check = round(float(smoker_deque[-1]-smoker_deque[0]))
+        # if the temp has changed by 15 degress then an alert is sent
+        if smoker_temp_check < -15:
+            print("Current smoker temp is:", smokertemp[0],";", "Smoker temp change in last 2.5 minutes is:", smoker_temp_check)
+            print("Smoker Alert!")
+        # Show work in progress, letting the user know the changes
+        else:
+            print("Current smoker temp is:", smokertemp[0],";", "Smoker temp change in last 2.5 minutes is:", smoker_temp_check)
+    else:
+        #if the deque has less than 5 items the current temp is printed
+        print("Current smoker temp is:", smokertemp[0])
     # acknowledge the message was received and processed 
     # (now it can be deleted from the queue)
     ch.basic_ack(delivery_tag=method.delivery_tag)
+
 
 
 # define a main function to run the program
@@ -76,7 +98,7 @@ def main(hn: str = "localhost", qn: str = "task_queue"):
         # configure the channel to listen on a specific queue,  
         # use the callback function named smoker_callback,
         # and do not auto-acknowledge the message (let the callback handle it)
-        channel.basic_consume(smoker_temp_queue, on_message_callback=smoker_callback)
+        channel.basic_consume(smoker_temp_queue, auto_ack = False, on_message_callback=smoker_callback)
 
         # print a message to the console for the user
         print(" [*] Ready for work. To exit press CTRL+C")

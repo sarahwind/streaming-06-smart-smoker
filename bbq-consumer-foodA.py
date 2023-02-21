@@ -10,17 +10,38 @@
 import pika
 import sys
 import time
+from collections import deque
 
 # declare variables
 foodA_temp_queue = "02-food-A"
+foodA_deque = deque(maxlen=20)  # limited to 20 items (the 20 most recent readings)
 
 # define a callback function to be called when a message is received
 def foodA_callback(ch, method, properties, body):
-    """ Define behavior on getting a message about the temperature of food A."""
-    # decode the binary message body to a string
-    print(f" [x] Received {body.decode()}")
-    # when done with task, tell the user
-    print(" [x] Done.")
+    """ Define behavior on getting a message about the temperature of food A"""
+    #define a list to place food A temps initializing with 0
+    foodAtemp = ['0']
+    # split timestamp and temp
+    message = body.decode().split(",")
+    # assign the temp to a variable and convert to float
+    foodAtemp[0] = round(float(message[-1]))
+    # add the temp to the deque
+    foodA_deque.append(foodAtemp[0])
+    # check to see that the deque has 20 items before analyzing
+    if len(foodA_deque) == 20:
+        # read rightmost item in deque and subtract from leftmost item in deque
+        # assign difference to a variable as a float
+        foodA_temp_check = round(float(foodA_deque[-1]-foodA_deque[0]))
+        # if the temp has changed by 1 degree then an alert is sent
+        if foodA_temp_check < 1:
+            print("Current temp of food A is:", foodAtemp[0],";", "Food A temp change in last 10 minutes is:", foodA_temp_check)
+            print("Food A stall!")
+        # Show work in progress, letting the user know the changes
+        else:
+            print("Current temp of food A is:", foodAtemp[0],";", "Food A temp change in last 10 minutes is:", foodA_temp_check)
+    else:
+        #if the deque has less than 5 items the current temp is printed
+        print("Current temp of food A is:", foodAtemp[0])
     # acknowledge the message was received and processed 
     # (now it can be deleted from the queue)
     ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -76,7 +97,7 @@ def main(hn: str = "localhost", qn: str = "task_queue"):
         # configure the channel to listen on a specific queue,  
         # use the callback function named foodA_callback,
         # and do not auto-acknowledge the message (let the callback handle it)
-        channel.basic_consume(foodA_temp_queue, on_message_callback=foodA_callback)
+        channel.basic_consume(foodA_temp_queue, auto_ack = False, on_message_callback=foodA_callback)
 
         # print a message to the console for the user
         print(" [*] Ready for work. To exit press CTRL+C")
