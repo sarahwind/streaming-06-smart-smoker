@@ -41,6 +41,19 @@ To open the RabbitMQ Admin page, set show_offer = "False", or set show_offer = "
 
 ## Screenshot
 
-See a running example with at least 3 concurrent process windows here:
+See a running example with 4 concurrent process windows:
 
-![Sarah Windeknecht Screenshot]()
+![Sarah Windeknecht Screenshot](4-concurrent-events.png)
+
+See a significant event example for the smoker, with timestamp:
+
+![Sarah Windeknecht Screenshot](smoker-sigevent.png)
+
+See significant event examples for foods A and B, with timestamps:
+
+![Sarah Windeknecht Screenshot](A-B-sigevent.png)
+
+An interesting part of the RabbitMQ console:
+
+![Sarah Windeknecht Screenshot](rabbit.png)
+

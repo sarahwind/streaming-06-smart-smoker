@@ -2,8 +2,8 @@
     Sarah Windeknecht
     February 7, 2023
     
-    This program listens for work messages contiously. 
-    Start multiple versions to add more workers.  
+    This program continuously listens for messages from the Smart Smoker producer on the producer queue.
+   
 
 """
 
